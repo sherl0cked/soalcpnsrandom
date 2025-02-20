@@ -8,59 +8,57 @@
 </head>
 <body>
   <div class="container">
-  <h1>Kuis</h1>
-  <div style="margin-bottom: 1rem;">
-    <button id="exitBtn" onclick="exitQuiz()">Keluar</button>
-    <button id="saveBtn" onclick="saveProgress()" disabled>Simpan Progres</button>
-    <span id="saveIndicator">Menyimpan...</span>
-  </div>
-  <div id="progress"></div>
-  <div id="quiz-container">
-    <h2 id="question"></h2>
-    <div id="options"></div>
-    <p id="explanation" style="display:none; font-style: italic;"></p>
-    <p id="timer" style="font-weight: bold; color: red;"></p>
-    <button onclick="nextQuestion()" id="nextBtn" style="display:none;">Next</button>
-    <h3 id="score" style="display:none;"></h3>
-    <button id="resetBtn" onclick="resetQuiz()" style="display:none;">Reset</button>
-  </div>
+    <div class="header">
+      <h1 id="quizTitle">Kuis</h1>
+      <button id="darkModeBtn" onclick="toggleDarkMode()">☀</button>
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <button id="exitBtn" onclick="exitQuiz()">Keluar</button>
+      <button id="saveBtn" onclick="saveProgress()" disabled>Simpan Progres</button>
+      <span id="saveIndicator">Menyimpan...</span>
+    </div>
+    <!-- Progress indicator: progress dots -->
+    <div id="progressContainer"></div>
+    <div id="quiz-container">
+      <h2 id="question"></h2>
+      <div id="options"></div>
+      <p id="explanation" style="display:none; font-style: italic;"></p>
+      <p id="timer" style="font-weight: bold; color: red;"></p>
+      <!-- Tombol Lanjut dan Selesaikan Sesi -->
+      <div style="margin-top: 10px;">
+        <button id="advanceBtn" onclick="advanceQuestion()">Lanjut</button>
+        <button id="completeSessionBtn" onclick="completeSession()">Selesaikan Sesi</button>
+      </div>
+      <h3 id="score" style="display:none;"></h3>
+      <button id="viewAnswersBtn" onclick="showCorrectAnswers()" style="display:none;">Lihat Jawaban</button>
+      <button id="resetBtn" onclick="resetQuiz()" style="display:none;">Reset</button>
+    </div>
   </div>
 
   <script>
     let questions = JSON.parse(localStorage.getItem('quizQuestions')) || [];
     let useTimer = localStorage.getItem('useTimer') === 'true';
-    
+    let customTimer = parseInt(localStorage.getItem('customTimer')) || 60;
+    let quizTitle = localStorage.getItem('quizTitle') || "Kuis";
+
     let currentQuestionIndex = 0;
     let score = 0;
     let timer;
     let timeLeft;
     let currentQuestion = null;
+    // answeredStatus: true = dijawab benar, false = dijawab salah, undefined = belum dijawab
+    let answeredStatus = [];
+    let selectedAnswers = [];
 
-    // Sembunyikan indikator simpan pada awalnya
+
+    // Set judul kuis
+    document.getElementById('quizTitle').textContent = quizTitle;
     document.getElementById("saveIndicator").style.display = "none";
 
-    // Fungsi untuk menyimpan progres ke localStorage dan menampilkan indikator animasi
-    function saveProgress() {
-      const indicator = document.getElementById("saveIndicator");
-      indicator.style.display = "inline-block";
-      indicator.style.opacity = "1";
-      
-      const progress = {
-        currentQuestionIndex: currentQuestionIndex,
-        score: score
-      };
-      localStorage.setItem('quizProgress', JSON.stringify(progress));
+    // Audio efek (pastikan file audio tersedia)
+    let correctSound = new Audio('correct.mp3');
+    let wrongSound = new Audio('wrong.mp3');
 
-      setTimeout(() => {
-        indicator.style.opacity = "0";
-        setTimeout(() => {
-          indicator.style.display = "none";
-        }, 500);
-        document.getElementById("saveBtn").disabled = true;
-      }, 1000);
-    }
-
-    // Fungsi untuk memuat progres jika tersedia
     function loadProgress() {
       const savedProgress = localStorage.getItem('quizProgress');
       if (savedProgress) {
@@ -68,6 +66,7 @@
           const progress = JSON.parse(savedProgress);
           currentQuestionIndex = progress.currentQuestionIndex;
           score = progress.score;
+          answeredStatus = progress.answeredStatus || [];
         } else {
           localStorage.removeItem('quizProgress');
         }
@@ -75,61 +74,97 @@
     }
     loadProgress();
 
-    // Tampilkan container kuis dan mulai kuis
-    document.getElementById('quiz-container').style.display = 'block';
-    updateProgress();
-    nextQuestion();
+    // Tampilkan progress indicator (progress dots)
+    function updateProgress() {
+      const container = document.getElementById('progressContainer');
+      container.innerHTML = '';
+      for (let i = 0; i < questions.length; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'progressDot';
+        if (answeredStatus[i] === true) {
+          dot.style.backgroundColor = '#00ff00';
+        } else if (answeredStatus[i] === false) {
+          dot.style.backgroundColor = '#ff0000';
+        } else {
+          dot.style.backgroundColor = '#ccc';
+        }
+        // Jika soal di-selesai (telah dijawab) atau di-skip, dot tetap dapat diklik untuk review
+        dot.style.cursor = 'pointer';
+        dot.title = "Klik untuk mereview soal ini";
+        dot.addEventListener('click', function() {
+          jumpToQuestion(i);
+        });
+        container.appendChild(dot);
+      }
+    }
 
-    function nextQuestion() {
-      if (currentQuestion !== null) {
-        currentQuestionIndex++;
+    // Fungsi menampilkan soal pada indeks tertentu.
+    // Jika soal sudah dijawab (answeredStatus tidak undefined), tampilkan highlight jawaban.
+    function displayQuestion(index) {
+  clearInterval(timer);
+  currentQuestion = questions[index];
+  document.getElementById('question').textContent = currentQuestion.question;
+  const optionsDiv = document.getElementById('options');
+  optionsDiv.innerHTML = '';
+  document.getElementById('explanation').style.display = 'none';
+  document.getElementById('timer').textContent = 'Waktu: ...';
+
+  currentQuestion.options.forEach(option => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.textContent = option;
+    // Jika soal belum dijawab, izinkan klik untuk menjawab
+    if (answeredStatus[index] === undefined) {
+      btn.onclick = () => checkAnswer(btn, option, currentQuestion.answer, currentQuestion.explanation);
+    }
+    // Jika soal sudah dijawab, beri highlight sesuai status:
+    else {
+      if (option === currentQuestion.answer) {
+        btn.classList.add('correct');
       }
-      
-      // Jika semua pertanyaan telah selesai, tampilkan skor dan tombol reset.
-      if (currentQuestionIndex >= questions.length) {
-        document.getElementById('question').textContent = 'Kuis selesai!';
-        document.getElementById('options').innerHTML = '';
-        document.getElementById('score').textContent = 'Skor Anda: ' + score + ' / ' + questions.length;
-        document.getElementById('score').style.display = 'block';
-        document.getElementById('nextBtn').style.display = 'none';
-        document.getElementById('explanation').style.display = 'none';
-        document.getElementById('timer').textContent = '';
-        document.getElementById('resetBtn').style.display = 'block';
-        localStorage.removeItem('quizProgress');
-        currentQuestion = null;
-        return;
+      // Jika opsi sama dengan jawaban yang dipilih namun salah, beri kelas "incorrect"
+      if (selectedAnswers[index] === option && option !== currentQuestion.answer) {
+        btn.classList.add('incorrect');
       }
-      
-      currentQuestion = questions[currentQuestionIndex];
+    }
+    optionsDiv.appendChild(btn);
+  });
+
+  // Jika soal sudah dijawab, tampilkan penjelasan dan hapus timer
+  if (answeredStatus[index] !== undefined) {
+    document.getElementById('explanation').textContent = currentQuestion.explanation;
+    document.getElementById('explanation').style.display = 'block';
+    document.getElementById('timer').textContent = '';
+  } else {
+    if (useTimer) {
+      startTimer();
+    } else {
+      document.getElementById('timer').textContent = '';
+    }
+  }
+  document.getElementById("saveBtn").disabled = false;
+}
+
+
+    // Fungsi advanceQuestion: tombol "Lanjut" hanya melompat ke soal berikutnya (looping)
+    function advanceQuestion() {
+      clearInterval(timer);
+      // Lakukan perhitungan looping (jika mencapai akhir, kembali ke awal)
+      currentQuestionIndex = (currentQuestionIndex + 1) % questions.length;
+      displayQuestion(currentQuestionIndex);
       updateProgress();
-      document.getElementById('question').textContent = currentQuestion.question;
-      const optionsDiv = document.getElementById('options');
-      optionsDiv.innerHTML = '';
-      document.getElementById('explanation').style.display = 'none';
-      document.getElementById('timer').textContent = 'Waktu: ...';
-      
-      currentQuestion.options.forEach(option => {
-        const btn = document.createElement('button');
-        btn.className = 'option';
-        btn.textContent = option;
-        btn.onclick = () => checkAnswer(btn, option, currentQuestion.answer, currentQuestion.explanation);
-        optionsDiv.appendChild(btn);
-      });
-      
-      document.getElementById('nextBtn').style.display = 'none';
-      if (useTimer) {
-        startTimer();
-      } else {
-        document.getElementById('timer').textContent = '';
-      }
-      
-      // Aktifkan tombol simpan progres setelah aktivitas (memunculkan soal baru)
       document.getElementById("saveBtn").disabled = false;
     }
-    
+
+    // Fungsi melompat ke soal tertentu (dari progress dot)
+    function jumpToQuestion(index) {
+      currentQuestionIndex = index;
+      displayQuestion(currentQuestionIndex);
+      updateProgress();
+    }
+
     function startTimer() {
-      // Ambil nilai timer kustom dari localStorage, default ke 60 jika tidak ada.
-      timeLeft = parseInt(localStorage.getItem('customTimer')) || 60;
+      timeLeft = customTimer;
       document.getElementById('timer').textContent = `Waktu: ${timeLeft} detik`;
       clearInterval(timer);
       timer = setInterval(() => {
@@ -139,65 +174,160 @@
           clearInterval(timer);
           disableOptions();
           showCorrectAnswer(currentQuestion);
-          document.getElementById('nextBtn').style.display = 'block';
+          answeredStatus[currentQuestionIndex] = false; // dianggap salah jika waktu habis
+          updateProgress();
+          // Tidak memanggil finishQuiz(), karena Advance hanya untuk review
+          advanceQuestion();
         }
       }, 1000);
     }
-    
+
     function disableOptions() {
       const buttons = document.querySelectorAll('.option');
       buttons.forEach(btn => btn.disabled = true);
     }
-    
+
     function checkAnswer(button, selected, correct, explanation) {
-      clearInterval(timer);
-      disableOptions();
-      showCorrectAnswer(currentQuestion);
-      if (selected === correct) {
-        button.classList.add('correct');
-        score++;
-      } else {
-        button.classList.add('incorrect');
-      }
-      document.getElementById('explanation').textContent = explanation;
-      document.getElementById('explanation').style.display = 'block';
-      document.getElementById('nextBtn').style.display = 'block';
+  clearInterval(timer);
+  disableOptions();
+  // Tampilkan highlight jawaban benar
+  showCorrectAnswer(currentQuestion);
+  let isCorrect = false;
+  if (selected === correct) {
+    button.classList.add('correct');
+    score++;
+    isCorrect = true;
+    correctSound.play();
+  } else {
+    button.classList.add('incorrect');
+    wrongSound.play();
+  }
+  // Simpan status jawaban dan jawaban yang dipilih
+  answeredStatus[currentQuestionIndex] = isCorrect;
+  selectedAnswers[currentQuestionIndex] = selected;
+  
+  document.getElementById('explanation').textContent = explanation;
+  document.getElementById('explanation').style.display = 'block';
+  document.getElementById("saveBtn").disabled = false;
+  updateProgress();
+}
+
+
+function showCorrectAnswer(q) {
+  // Fungsi ini bisa tetap sederhana: iterasi tombol opsi dan jika teksnya sesuai dengan q.answer, tambahkan kelas 'correct'
+  const options = document.getElementsByClassName('option');
+  Array.from(options).forEach(option => {
+    if (option.textContent === q.answer) {
+      option.classList.add('correct');
+    }
+  });
+}
+
+
+    // Fungsi finishQuiz hanya dipanggil melalui tombol "Selesaikan Sesi"
+    function finishQuiz() {
+      // Sembunyikan tombol Advance dan Selesaikan Sesi, serta timer
+      document.getElementById('advanceBtn').style.display = 'none';
+      document.getElementById('completeSessionBtn').style.display = 'none';
+      document.getElementById('timer').style.display = 'none';
       
-      // Aktifkan tombol simpan progres setelah aktivitas (jawaban diberikan)
-      document.getElementById("saveBtn").disabled = false;
-    }
-    
-    function showCorrectAnswer(q) {
-      const options = document.getElementsByClassName('option');
-      Array.from(options).forEach(option => {
-        if (option.textContent === q.answer) {
-          option.classList.add('correct');
-        }
-      });
-    }
-    
-    function updateProgress() {
-      const currentPosition = currentQuestionIndex + 1;
-      document.getElementById('progress').textContent = `Pertanyaan ${currentPosition} dari ${questions.length}`;
-    }
-    
-    function resetQuiz() {
-      localStorage.removeItem('quizQuestions');
-      localStorage.removeItem('useTimer');
+      document.getElementById('question').textContent = 'Kuis selesai!';
+      document.getElementById('options').innerHTML = '';
+      document.getElementById('score').textContent = 'Skor Anda: ' + score + ' / ' + questions.length;
+      document.getElementById('score').style.display = 'block';
+      document.getElementById('explanation').style.display = 'none';
+      document.getElementById('resetBtn').style.display = 'block';
+      document.getElementById('viewAnswersBtn').style.display = 'block';
+      
       localStorage.removeItem('quizProgress');
-      localStorage.removeItem('customTimer');
-      window.location.href = 'index.html';
+      showRank();
     }
-    
+
+    function completeSession() {
+      if (confirm("Apakah Anda yakin ingin menyelesaikan sesi kuis?")) {
+        finishQuiz();
+      }
+    }
+
+    function showRank() {
+      let message = "Peringkat Anda: ";
+      const percentage = score / questions.length;
+      if (percentage === 1) {
+        message += "Sempurna! 🎉";
+      } else if (percentage >= 0.7) {
+        message += "Bagus! 👍";
+      } else if (percentage >= 0.5) {
+        message += "Cukup Baik. 💡";
+      } else {
+        message += "Perlu Latihan Lagi. 📚";
+      }
+      alert(message);
+    }
+
+    function showCorrectAnswers() {
+      let summary = "Jawaban yang benar:\n\n";
+      questions.forEach((q, index) => {
+        summary += `${index + 1}. ${q.question}\nJawaban: ${q.answer}\n\n`;
+      });
+      alert(summary);
+    }
+
+    function resetQuiz() {
+      currentQuestionIndex = 0;
+      score = 0;
+      answeredStatus = [];
+      clearInterval(timer);
+      
+      // Kembalikan tampilan elemen ke kondisi awal
+      document.getElementById('timer').style.display = 'block';
+      document.getElementById('completeSessionBtn').style.display = 'inline-block';
+      document.getElementById('advanceBtn').style.display = 'inline-block';
+      
+      document.getElementById('score').style.display = 'none';
+      document.getElementById('viewAnswersBtn').style.display = 'none';
+      document.getElementById('resetBtn').style.display = 'none';
+      document.getElementById('explanation').style.display = 'none';
+      
+      updateProgress();
+      displayQuestion(currentQuestionIndex);
+    }
+
     function exitQuiz() {
       if (confirm("Anda yakin ingin keluar? Progres kuis Anda akan hilang.")) {
         localStorage.removeItem('quizQuestions');
         localStorage.removeItem('useTimer');
         localStorage.removeItem('quizProgress');
         localStorage.removeItem('customTimer');
+        localStorage.removeItem('quizTitle');
         window.location.href = 'index.html';
       }
-    }  
-    </script>
+    }
+
+    function toggleDarkMode() {
+  const btn = document.getElementById("darkModeBtn");
+  document.body.classList.toggle("dark-mode");
+  
+  // Mulai animasi rotasi
+  btn.style.transform = "rotate(360deg)";
+  
+  // Setelah animasi selesai (0.5 detik), reset rotasi dan ganti ikon
+  setTimeout(() => {
+    btn.style.transform = "";
+    if (document.body.classList.contains("dark-mode")) {
+      // Mode gelap aktif, tampilkan ikon bulan
+      btn.innerHTML = "☾";
+    } else {
+      // Mode terang aktif, tampilkan ikon matahari
+      btn.innerHTML = "☀";
+    }
+  }, 500);
+}
+   
+    // Tampilkan pertanyaan pertama jika ada
+    if (questions.length > 0) {
+      updateProgress();
+      displayQuestion(currentQuestionIndex);
+    }
+  </script>
 </body>
 </html>
