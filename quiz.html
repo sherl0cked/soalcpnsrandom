@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kuis</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+  <h1>Kuis</h1>
+  <div style="margin-bottom: 1rem;">
+    <button id="exitBtn" onclick="exitQuiz()">Keluar</button>
+    <button id="saveBtn" onclick="saveProgress()" disabled>Simpan Progres</button>
+    <span id="saveIndicator">Menyimpan...</span>
+  </div>
+  <div id="progress"></div>
+  <div id="quiz-container">
+    <h2 id="question"></h2>
+    <div id="options"></div>
+    <p id="explanation" style="display:none; font-style: italic;"></p>
+    <p id="timer" style="font-weight: bold; color: red;"></p>
+    <button onclick="nextQuestion()" id="nextBtn" style="display:none;">Next</button>
+    <h3 id="score" style="display:none;"></h3>
+    <button id="resetBtn" onclick="resetQuiz()" style="display:none;">Reset</button>
+  </div>
+  </div>
+
+  <script>
+    let questions = JSON.parse(localStorage.getItem('quizQuestions')) || [];
+    let useTimer = localStorage.getItem('useTimer') === 'true';
+    
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let timer;
+    let timeLeft;
+    let currentQuestion = null;
+
+    // Sembunyikan indikator simpan pada awalnya
+    document.getElementById("saveIndicator").style.display = "none";
+
+    // Fungsi untuk menyimpan progres ke localStorage dan menampilkan indikator animasi
+    function saveProgress() {
+      const indicator = document.getElementById("saveIndicator");
+      indicator.style.display = "inline-block";
+      indicator.style.opacity = "1";
+      
+      const progress = {
+        currentQuestionIndex: currentQuestionIndex,
+        score: score
+      };
+      localStorage.setItem('quizProgress', JSON.stringify(progress));
+
+      setTimeout(() => {
+        indicator.style.opacity = "0";
+        setTimeout(() => {
+          indicator.style.display = "none";
+        }, 500);
+        document.getElementById("saveBtn").disabled = true;
+      }, 1000);
+    }
+
+    // Fungsi untuk memuat progres jika tersedia
+    function loadProgress() {
+      const savedProgress = localStorage.getItem('quizProgress');
+      if (savedProgress) {
+        if (confirm("Anda memiliki progres kuis yang belum selesai. Apakah Anda ingin melanjutkan?")) {
+          const progress = JSON.parse(savedProgress);
+          currentQuestionIndex = progress.currentQuestionIndex;
+          score = progress.score;
+        } else {
+          localStorage.removeItem('quizProgress');
+        }
+      }
+    }
+    loadProgress();
+
+    // Tampilkan container kuis dan mulai kuis
+    document.getElementById('quiz-container').style.display = 'block';
+    updateProgress();
+    nextQuestion();
+
+    function nextQuestion() {
+      if (currentQuestion !== null) {
+        currentQuestionIndex++;
+      }
+      
+      // Jika semua pertanyaan telah selesai, tampilkan skor dan tombol reset.
+      if (currentQuestionIndex >= questions.length) {
+        document.getElementById('question').textContent = 'Kuis selesai!';
+        document.getElementById('options').innerHTML = '';
+        document.getElementById('score').textContent = 'Skor Anda: ' + score + ' / ' + questions.length;
+        document.getElementById('score').style.display = 'block';
+        document.getElementById('nextBtn').style.display = 'none';
+        document.getElementById('explanation').style.display = 'none';
+        document.getElementById('timer').textContent = '';
+        document.getElementById('resetBtn').style.display = 'block';
+        localStorage.removeItem('quizProgress');
+        currentQuestion = null;
+        return;
+      }
+      
+      currentQuestion = questions[currentQuestionIndex];
+      updateProgress();
+      document.getElementById('question').textContent = currentQuestion.question;
+      const optionsDiv = document.getElementById('options');
+      optionsDiv.innerHTML = '';
+      document.getElementById('explanation').style.display = 'none';
+      document.getElementById('timer').textContent = 'Waktu: ...';
+      
+      currentQuestion.options.forEach(option => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.textContent = option;
+        btn.onclick = () => checkAnswer(btn, option, currentQuestion.answer, currentQuestion.explanation);
+        optionsDiv.appendChild(btn);
+      });
+      
+      document.getElementById('nextBtn').style.display = 'none';
+      if (useTimer) {
+        startTimer();
+      } else {
+        document.getElementById('timer').textContent = '';
+      }
+      
+      // Aktifkan tombol simpan progres setelah aktivitas (memunculkan soal baru)
+      document.getElementById("saveBtn").disabled = false;
+    }
+    
+    function startTimer() {
+      // Ambil nilai timer kustom dari localStorage, default ke 60 jika tidak ada.
+      timeLeft = parseInt(localStorage.getItem('customTimer')) || 60;
+      document.getElementById('timer').textContent = `Waktu: ${timeLeft} detik`;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').textContent = `Waktu: ${timeLeft} detik`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          disableOptions();
+          showCorrectAnswer(currentQuestion);
+          document.getElementById('nextBtn').style.display = 'block';
+        }
+      }, 1000);
+    }
+    
+    function disableOptions() {
+      const buttons = document.querySelectorAll('.option');
+      buttons.forEach(btn => btn.disabled = true);
+    }
+    
+    function checkAnswer(button, selected, correct, explanation) {
+      clearInterval(timer);
+      disableOptions();
+      showCorrectAnswer(currentQuestion);
+      if (selected === correct) {
+        button.classList.add('correct');
+        score++;
+      } else {
+        button.classList.add('incorrect');
+      }
+      document.getElementById('explanation').textContent = explanation;
+      document.getElementById('explanation').style.display = 'block';
+      document.getElementById('nextBtn').style.display = 'block';
+      
+      // Aktifkan tombol simpan progres setelah aktivitas (jawaban diberikan)
+      document.getElementById("saveBtn").disabled = false;
+    }
+    
+    function showCorrectAnswer(q) {
+      const options = document.getElementsByClassName('option');
+      Array.from(options).forEach(option => {
+        if (option.textContent === q.answer) {
+          option.classList.add('correct');
+        }
+      });
+    }
+    
+    function updateProgress() {
+      const currentPosition = currentQuestionIndex + 1;
+      document.getElementById('progress').textContent = `Pertanyaan ${currentPosition} dari ${questions.length}`;
+    }
+    
+    function resetQuiz() {
+      localStorage.removeItem('quizQuestions');
+      localStorage.removeItem('useTimer');
+      localStorage.removeItem('quizProgress');
+      localStorage.removeItem('customTimer');
+      window.location.href = 'index.html';
+    }
+    
+    function exitQuiz() {
+      if (confirm("Anda yakin ingin keluar? Progres kuis Anda akan hilang.")) {
+        localStorage.removeItem('quizQuestions');
+        localStorage.removeItem('useTimer');
+        localStorage.removeItem('quizProgress');
+        localStorage.removeItem('customTimer');
+        window.location.href = 'index.html';
+      }
+    }  
+    </script>
+</body>
+</html>

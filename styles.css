@@ -1,0 +1,138 @@
+/* styles.css */
+
+/* Reset dasar */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  /* Body dengan background gradient biru dan centering konten */
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  
+  /* Container utama dengan efek blur dan bayangan */
+  .container {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 8px 32px 0 rgba(31,38,135,0.37);
+    text-align: center;
+  }
+  
+  /* Judul dan subjudul */
+  h1, h2, h3 {
+    margin-bottom: 1rem;
+    color: #fff;
+  }
+  
+  /* Progress bar & timer */
+  #progress {
+    margin: 1rem 0;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  
+  #timer {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+    color: #ffcc00;
+  }
+  
+  /* Tombol umum */
+  button {
+    background-color: #1e90ff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    margin: 0.5rem;
+    border-radius: 25px;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  button:hover {
+    background-color: #1c86ee;
+  }
+  
+  button:active {
+    transform: scale(0.98);
+  }
+  
+  /* Tombol opsi untuk kuis */
+  .option {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border: 2px solid #1e90ff;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+  
+  .option:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.02);
+  }
+  
+  /* Styling khusus untuk jawaban benar dan salah */
+  .correct {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+  }
+  
+  .incorrect {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+  }
+  
+  /* Tampilan teks penjelasan */
+  #explanation {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #fff;
+  }
+  
+  /* Styling tombol reset dan keluar (nuansa merah untuk kontras) */
+  #resetBtn, #exitBtn {
+    background-color: #ff4757;
+  }
+  
+  #resetBtn:hover, #exitBtn:hover {
+    background-color: #ff6b81;
+  }
+  
+  /* Responsive untuk layar kecil */
+  @media (max-width: 600px) {
+    .container {
+      padding: 1.5rem;
+    }
+    
+    button, .option {
+      font-size: 0.9rem;
+    }
+  }
+  #saveIndicator {
+    display: inline-block;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    margin-left: 10px;
+    font-size: 0.9rem;
+    color: #fff;
+  }
