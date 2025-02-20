@@ -9,8 +9,10 @@
 </head>
 <body>
   <div class="container">
+    <div class="header">
     <h1>Mulai Kuis</h1>
-    
+    <button id="darkModeBtn" onclick="toggleDarkMode()">☀</button>
+    </div>
     <!-- File input CSV (hanya akan digunakan jika default tidak dipilih) -->
     <div id="fileInputContainer">
       <input type="file" id="csvFile" accept=".csv" />
@@ -67,7 +69,6 @@
       const fileInputContainer = document.getElementById('fileInputContainer');
       if (isDefault) {
         defaultOptions.style.display = 'block';
-        // Sembunyikan input file jika pertanyaan default dipilih
         fileInputContainer.style.display = 'none';
       } else {
         defaultOptions.style.display = 'none';
@@ -79,7 +80,6 @@
     function startQuiz() {
       const useDefault = document.getElementById('defaultCheckbox').checked;
       if (useDefault) {
-        // Menggunakan file default sesuai kategori yang dipilih
         const topic = document.getElementById('defaultTopic').value;
         fetch(topic)
           .then(response => response.text())
@@ -90,7 +90,6 @@
           })
           .catch(error => console.error('Gagal memuat pertanyaan default:', error));
       } else {
-        // Menggunakan file CSV yang diupload oleh pengguna
         const file = document.getElementById('csvFile').files[0];
         if (!file) {
           alert('Pilih file CSV terlebih dahulu!');
@@ -107,37 +106,43 @@
       }
     }
 
-    // Fungsi untuk menyimpan data ke localStorage dan mengalihkan ke halaman quiz.html
     function proceedToQuiz() {
       localStorage.setItem('quizQuestions', JSON.stringify(questions));
       localStorage.setItem('useTimer', document.getElementById('toggleTimer').checked);
       localStorage.setItem('customTimer', document.getElementById('customTimer').value);
+      
+      // Simpan judul kuis sesuai opsi default, atau gunakan "Kuis" jika tidak default
+      let quizTitle = "";
+      if (document.getElementById('defaultCheckbox').checked) {
+        quizTitle = document.getElementById('defaultTopic').options[document.getElementById('defaultTopic').selectedIndex].text;
+      } else {
+        quizTitle = "Kuis";
+      }
+      localStorage.setItem('quizTitle', quizTitle);
+      
       window.location.href = 'quiz.html';
     }
 
     function parseCSV(text) {
-  // Menggunakan PapaParse untuk parsing CSV yang kompleks
-  const results = Papa.parse(text, {
-    header: false,
-    skipEmptyLines: true
-  });
-  return results.data.map(cols => {
-    return {
-      question: cols[0] ? cols[0].trim().replace(/^"|"$/g, '') : '',
-      options: cols.slice(1, 6).map(opt => opt ? opt.trim().replace(/^"|"$/g, '') : ''),
-      answer: cols[6] ? cols[6].trim().replace(/^"|"$/g, '') : '',
-      explanation: cols[7] ? cols[7].trim().replace(/^"|"$/g, '') : ''
-    };
-  }).filter(q =>
-    q.question &&
-    q.options.length === 5 &&
-    q.answer &&
-    q.options.includes(q.answer)
-  );
-}
+      const results = Papa.parse(text, {
+        header: false,
+        skipEmptyLines: true
+      });
+      return results.data.map(cols => {
+        return {
+          question: cols[0] ? cols[0].trim().replace(/^"|"$/g, '') : '',
+          options: cols.slice(1, 6).map(opt => opt ? opt.trim().replace(/^"|"$/g, '') : ''),
+          answer: cols[6] ? cols[6].trim().replace(/^"|"$/g, '') : '',
+          explanation: cols[7] ? cols[7].trim().replace(/^"|"$/g, '') : ''
+        };
+      }).filter(q =>
+        q.question &&
+        q.options.length === 5 &&
+        q.answer &&
+        q.options.includes(q.answer)
+      );
+    }
 
-
-    // Fungsi untuk mengacak array pertanyaan
     function shuffleArray(array) {
       const shuffled = [...array];
       for (let i = shuffled.length - 1; i > 0; i--) {
@@ -146,6 +151,26 @@
       }
       return shuffled;
     }
+    function toggleDarkMode() {
+  const btn = document.getElementById("darkModeBtn");
+  document.body.classList.toggle("dark-mode");
+  
+  // Mulai animasi rotasi
+  btn.style.transform = "rotate(360deg)";
+  
+  // Setelah animasi selesai (0.5 detik), reset rotasi dan ganti ikon
+  setTimeout(() => {
+    btn.style.transform = "";
+    if (document.body.classList.contains("dark-mode")) {
+      // Mode gelap aktif, tampilkan ikon bulan
+      btn.innerHTML = "☾";
+    } else {
+      // Mode terang aktif, tampilkan ikon matahari
+      btn.innerHTML = "☀";
+    }
+  }, 500);
+}
+
   </script>
 </body>
 </html>
