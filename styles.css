@@ -1,138 +1,183 @@
-/* styles.css */
-
 /* Reset dasar */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-  
-  /* Body dengan background gradient biru dan centering konten */
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-    color: #fff;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  
-  /* Container utama dengan efek blur dan bayangan */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Style body: latar hitam, teks putih */
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Dark mode style */
+.dark-mode {
+  background-color: #000000;
+  color: #000000;
+}
+
+#darkModeBtn {
+  transition: transform 0.5s ease;
+  font-size: 20px;
+  background: none;
+  border: 2px solid #000000;  /* Tambahkan border */
+  border-radius: 4px;      /* Beri sudut melengkung */
+  padding-top: 4px;            /* Jarak antara ikon dan border */
+  padding-bottom: 6px;
+  cursor: pointer;
+}
+
+/* Container: background putih dengan outline hitam */
+.container {
+  background-color: #fff;
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Header dengan tombol dark mode */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Judul */
+h1, h2, h3 {
+  margin-bottom: 20px;
+}
+
+/* Tombol umum */
+button {
+  background-color: #fff;
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 4px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 16px;
+  margin: 5px;
+}
+button:hover {
+  background-color: #f0f0f0;
+}
+
+/* Tombol opsi untuk kuis */
+.option {
+  text-align: left;
+  font-size: 0.9rem;
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid black;
+  background-color: #fff;
+  cursor: pointer;
+  margin-bottom: 5px;
+}
+.option:hover {
+  background-color: #f0f0f0;
+}
+
+/* Styling untuk jawaban benar: biru */
+.correct {
+  background-color: #008000 !important;
+  border-color: #008000 !important;
+  color: #fff !important;
+}
+
+/* Styling untuk jawaban salah: merah */
+.incorrect {
+  background-color: #ff0000 !important;
+  border-color: #ff0000 !important;
+  color: #fff !important;
+}
+
+/* Progress indicator dots */
+#progressContainer {
+  margin: 10px 0;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+.progressDot {
+  width: 15px;
+  height: 15px;
+  border: 1px solid #000;
+  border-radius: 50%;
+  background-color: #ccc;
+}
+
+/* Timer dan penjelasan */
+#timer {
+  margin: 10px 0;
+  font-size: 16px;
+}
+#explanation {
+  margin-top: 10px;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Responsive untuk layar kecil */
+@media (max-width: 600px) {
   .container {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border-radius: 12px;
-    padding: 2rem;
-    max-width: 600px;
-    width: 90%;
-    box-shadow: 0 8px 32px 0 rgba(31,38,135,0.37);
-    text-align: center;
+    padding: 15px;
   }
-  
-  /* Judul dan subjudul */
-  h1, h2, h3 {
-    margin-bottom: 1rem;
-    color: #fff;
+  button, .option {
+    font-size: 14px;
+    padding: 8px 16px;
   }
-  
-  /* Progress bar & timer */
-  #progress {
-    margin: 1rem 0;
-    font-size: 1.2rem;
-    font-weight: bold;
-  }
-  
-  #timer {
-    margin: 0.5rem 0;
-    font-size: 1.1rem;
-    color: #ffcc00;
-  }
-  
-  /* Tombol umum */
-  button {
-    background-color: #1e90ff;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    margin: 0.5rem;
-    border-radius: 25px;
-    color: #fff;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-  }
-  
-  button:hover {
-    background-color: #1c86ee;
-  }
-  
-  button:active {
-    transform: scale(0.98);
-  }
-  
-  /* Tombol opsi untuk kuis */
-  .option {
-    display: block;
-    width: 100%;
-    padding: 1rem;
-    margin: 0.5rem 0;
-    border: 2px solid #1e90ff;
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-  }
-  
-  .option:hover {
-    background-color: rgba(255, 255, 255, 0.3);
-    transform: scale(1.02);
-  }
-  
-  /* Styling khusus untuk jawaban benar dan salah */
-  .correct {
-    background-color: #28a745 !important;
-    border-color: #28a745 !important;
-  }
-  
-  .incorrect {
-    background-color: #dc3545 !important;
-    border-color: #dc3545 !important;
-  }
-  
-  /* Tampilan teks penjelasan */
-  #explanation {
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    color: #fff;
-  }
-  
-  /* Styling tombol reset dan keluar (nuansa merah untuk kontras) */
-  #resetBtn, #exitBtn {
-    background-color: #ff4757;
-  }
-  
-  #resetBtn:hover, #exitBtn:hover {
-    background-color: #ff6b81;
-  }
-  
-  /* Responsive untuk layar kecil */
-  @media (max-width: 600px) {
-    .container {
-      padding: 1.5rem;
-    }
-    
-    button, .option {
-      font-size: 0.9rem;
-    }
-  }
-  #saveIndicator {
-    display: inline-block;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-    margin-left: 10px;
-    font-size: 0.9rem;
-    color: #fff;
-  }
+}
+/* Dark mode overrides: warna sebaliknya dari mode biasa */
+.dark-mode body {
+  background-color: #fff; /* latar putih */
+  color: #000;            /* teks hitam */
+}
+
+.dark-mode .container {
+  background-color: #000; /* container latar hitam */
+  color: #fff;            /* teks putih */
+  border-color: #fff;     /* border putih */
+}
+
+.dark-mode button {
+  background-color: #000;
+  color: #fff;
+  border-color: #fff;
+}
+
+.dark-mode button:hover {
+  background-color: #222;
+}
+
+.dark-mode .option {
+  background-color: #000;
+  color: #fff;
+  border-color: #fff;
+}
+
+.dark-mode .option:hover {
+  background-color: #222;
+}
+
+/* Ubah warna progress dot pada dark mode */
+.dark-mode #progressContainer .progressDot {
+  border-color: #fff;
+  /* Jika diinginkan, bisa juga ubah background-color dot default */
+}
+
+.dark-mode #darkModeBtn {
+  border-color: #ffffff;  /* Contoh: border hitam saat dark mode aktif */
+}
